@@ -5,7 +5,7 @@ from trl import PPOTrainer, PPOConfig, AutoModelForCausalLMWithValueHead, set_se
 
 # Load dataset
 import json
-with open("/content/RLHF_Sentiment_Alignment/data/imdb_preference.json") as f:
+with open("/data/imdb_preference.json") as f:
     data = json.load(f)
 
 prompts = [item["prompt"] for item in data]
@@ -48,6 +48,8 @@ ppo_trainer = PPOTrainer(
 # PPO Training Loop using your dataset
 n_epochs = 1
 n_batches = len(prompts) // ppo_config.batch_size 
+
+
 for epoch in range(n_epochs):
     for i in range(0, n_batches * ppo_config.batch_size, ppo_config.batch_size):
         batch_prompts = prompts[i:i+ppo_config.batch_size]
