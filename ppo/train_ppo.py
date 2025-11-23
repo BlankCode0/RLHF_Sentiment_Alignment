@@ -18,7 +18,7 @@ rejected_scores = [item["rejected_score"] for item in data]
 model_name = "gpt2"
 tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
-# text = tokenizer.decode(response_ids[0][len(tokenizer(prompt)["input_ids"]):], skip_special_tokens=True)
+
 model = AutoModelForCausalLMWithValueHead.from_pretrained(model_name)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
@@ -45,7 +45,6 @@ ppo_trainer = PPOTrainer(
     data_collator=lambda data: tokenizer(data, return_tensors="pt", padding=True, truncation=True)
 )
 
-# PPO Training Loop using your dataset
 n_epochs = 1
 n_batches = len(prompts) // ppo_config.batch_size 
 
@@ -68,22 +67,21 @@ for epoch in range(n_epochs):
                 top_k=50,
                 top_p=0.95,
             )
-            # Only keep the new tokens (generated part, not prompt)
             gen_text = tokenizer.decode(response_ids[0][input_ids.shape[1]:], skip_special_tokens=True)
             responses.append(gen_text)
 
         # Tokenize prompts (queries) and responses
         tokenized_prompts = [tokenizer(prompt, return_tensors="pt").input_ids.squeeze(0).to(device) for prompt in batch_prompts]
         tokenized_responses = [tokenizer(resp, return_tensors="pt").input_ids.squeeze(0).to(device) for resp in responses]
-        # Convert rewards to tensors
+
         rewards = [torch.tensor([score]).to(device) for score in batch_scores]
 
         stats = ppo_trainer.step(tokenized_prompts, tokenized_responses, rewards)
 
-        # Now pass tokenized prompts and responses
         stats = ppo_trainer.step(tokenized_prompts, tokenized_responses, rewards)
         print(f"Batch {i//ppo_config.batch_size} | Reward: {rewards} | PPO stats: {stats}")
         
 print("PPO fine-tuning complete!")
 model.save_pretrained("ppo-gpt2-custom")
 tokenizer.save_pretrained("ppo-gpt2-custom")
+
